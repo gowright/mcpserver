@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: mcpserver/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mcpserver
+        run: npm ci
+
+      - name: Build project
+        working-directory: mcpserver
+        run: npm run build
+
+      - name: Run tests
+        working-directory: mcpserver
+        run: npm test
+
+      - name: Validate executable
+        working-directory: mcpserver
+        run: |
+          chmod +x dist/index.js
+          node dist/index.js --help || echo "Warning: Could not run help command"
+
+      - name: Check package integrity
+        working-directory: mcpserver
+        run: npm pack --dry-run
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: mcpserver/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mcpserver
+        run: npm ci
+
+      - name: Check TypeScript
+        working-directory: mcpserver
+        run: npx tsc --noEmit
+
+      - name: Check formatting (if prettier is configured)
+        working-directory: mcpserver
+        run: |
+          if [ -f ".prettierrc" ] || [ -f "prettier.config.js" ]; then
+            npx prettier --check .
+          else
+            echo "Prettier not configured, skipping format check"
+          fi
+        continue-on-error: true

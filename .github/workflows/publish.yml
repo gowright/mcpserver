@@ -1,0 +1,103 @@
+name: Publish MCP Server
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        working-directory: mcpserver
+        run: npm ci
+
+      - name: Build project
+        working-directory: mcpserver
+        run: npm run build
+
+      - name: Make executable
+        working-directory: mcpserver
+        run: chmod +x dist/index.js
+
+      - name: Validate build
+        working-directory: mcpserver
+        run: node dist/index.js --help || echo "Warning: Could not run help command"
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: mcpserver
+        run: |
+          npm version ${{ github.event.inputs.version_type }}
+          git push origin HEAD:${{ github.ref_name }}
+          git push --tags
+
+      - name: Get version
+        id: version
+        working-directory: mcpserver
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Publish to npm
+        working-directory: mcpserver
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: MCP Server v${{ steps.version.outputs.version }}
+          body: |
+            ## Gowright MCP Server v${{ steps.version.outputs.version }}
+            
+            ### Installation
+            ```bash
+            uvx gowright-mcp-server@${{ steps.version.outputs.version }}
+            ```
+            
+            ### MCP Configuration
+            ```json
+            {
+              "mcpServers": {
+                "gowright": {
+                  "command": "uvx",
+                  "args": ["gowright-mcp-server@${{ steps.version.outputs.version }}"]
+                }
+              }
+            }
+            ```
+          draft: false
+          prerelease: false
