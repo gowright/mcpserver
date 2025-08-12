@@ -60,16 +60,16 @@ npm run test-local-win
 ```
 
 The local test script replicates the CI/CD pipeline and includes:
-- Node.js version validation
-- Dependency installation
+- Node.js version validation (requires 18+)
+- Dependency installation and verification
 - TypeScript type checking
 - Code formatting validation (if Prettier is configured)
-- Project build
-- Executable validation
+- Project build and executable creation
+- Build validation (verifies executable file exists with proper permissions)
 - Test execution
 - Package integrity checks
 - Bundle size analysis
-- Additional code quality checks
+- Additional code quality checks (TODO/FIXME comments, console.log usage)
 
 This ensures your code will pass CI/CD before you push to the repository.
 
