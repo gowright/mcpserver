@@ -43,6 +43,36 @@ npm test
 node dist/index.js
 ```
 
+### Local Testing Before Commit
+
+Before committing your changes, run the local CI/CD pipeline to ensure everything works:
+
+```bash
+# Unix/Linux/macOS
+./test-local.sh
+# or
+npm run test-local
+
+# Windows
+test-local.bat
+# or
+npm run test-local-win
+```
+
+The local test script replicates the CI/CD pipeline and includes:
+- Node.js version validation
+- Dependency installation
+- TypeScript type checking
+- Code formatting validation (if Prettier is configured)
+- Project build
+- Executable validation
+- Test execution
+- Package integrity checks
+- Bundle size analysis
+- Additional code quality checks
+
+This ensures your code will pass CI/CD before you push to the repository.
+
 ## MCP Configuration
 
 Add this server to your MCP configuration file:
