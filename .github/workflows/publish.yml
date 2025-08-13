@@ -19,6 +19,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     
     steps:
       - name: Checkout code
@@ -69,19 +72,9 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         working-directory: .
         run: |
-          # Check if git is available before attempting version bump
-          set +e
-          command -v git >/dev/null 2>&1
-          if [ $? -eq 0 ]; then
-            set -e
-            npm version ${{ github.event.inputs.version_type }}
-            git push origin "HEAD:${{ github.ref_name }}"
-            git push --tags
-          else
-            set -e
-            echo "Git not available, skipping version bump and push"
-            npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
-          fi
+          npm version ${{ github.event.inputs.version_type }}
+          git push origin HEAD:main
+          git push --tags
 
       - name: Get version
         id: version
