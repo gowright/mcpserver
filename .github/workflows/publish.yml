@@ -34,41 +34,62 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        working-directory: mcpserver
+        working-directory: .
         run: npm ci
 
       - name: Build project
-        working-directory: mcpserver
+        working-directory: .
         run: npm run build
 
       - name: Make executable
-        working-directory: mcpserver
+        working-directory: .
         run: chmod +x dist/index.js
 
       - name: Validate build
-        working-directory: mcpserver
-        run: node dist/index.js --help || echo "Warning: Could not run help command"
+        working-directory: .
+        run: |
+          echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node dist/index.js
 
       - name: Configure git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Check if git is available (may not be in some CI environments)
+          set +e  # Disable exit on error temporarily
+          command -v git >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            set -e  # Re-enable exit on error
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            echo "Git configured successfully"
+          else
+            set -e  # Re-enable exit on error
+            echo "Git not available, skipping git configuration"
+          fi
 
       - name: Bump version (manual trigger)
         if: github.event_name == 'workflow_dispatch'
-        working-directory: mcpserver
+        working-directory: .
         run: |
-          npm version ${{ github.event.inputs.version_type }}
-          git push origin HEAD:${{ github.ref_name }}
-          git push --tags
+          # Check if git is available before attempting version bump
+          set +e
+          command -v git >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            set -e
+            npm version ${{ github.event.inputs.version_type }}
+            git push origin "HEAD:${{ github.ref_name }}"
+            git push --tags
+          else
+            set -e
+            echo "Git not available, skipping version bump and push"
+            npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
+          fi
 
       - name: Get version
         id: version
-        working-directory: mcpserver
+        working-directory: .
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Publish to npm
-        working-directory: mcpserver
+        working-directory: .
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -12,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22, 24]
     
     steps:
       - name: Checkout code
@@ -33,25 +33,24 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        working-directory: mcpserver
+        working-directory: .
         run: npm ci
 
       - name: Build project
-        working-directory: mcpserver
+        working-directory: .
         run: npm run build
 
       - name: Run tests
-        working-directory: mcpserver
+        working-directory: .
         run: npm test
 
       - name: Validate executable
-        working-directory: mcpserver
+        working-directory: .
         run: |
-          chmod +x dist/index.js
-          node dist/index.js --help || echo "Warning: Could not run help command"
+          echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node dist/index.js
 
       - name: Check package integrity
-        working-directory: mcpserver
+        working-directory: .
         run: npm pack --dry-run
 
   lint:
@@ -70,21 +69,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-18-${{ hashFiles('mcpserver/package-lock.json') }}
+          key: ${{ runner.os }}-node-18-${{ hashFiles('./package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-18-
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        working-directory: mcpserver
+        working-directory: .
         run: npm ci
 
       - name: Check TypeScript
-        working-directory: mcpserver
+        working-directory: .
         run: npx tsc --noEmit
 
       - name: Check formatting (if prettier is configured)
-        working-directory: mcpserver
+        working-directory: .
         run: |
           if [ -f ".prettierrc" ] || [ -f "prettier.config.js" ]; then
             npx prettier --check .
