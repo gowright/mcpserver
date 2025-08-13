@@ -1,6 +1,6 @@
 {
   "name": "gowright-mcp-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for Gowright testing framework - provides comprehensive testing capabilities for Go projects",
   "main": "dist/index.js",
   "type": "module",
